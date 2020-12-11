@@ -2,7 +2,7 @@ module github.com/raf924/bot-misc-cmd
 
 go 1.15
 
-require github.com/raf924/bot v1.0.0-alpha.10
+require github.com/raf924/bot v1.0.0-alpha.11
 
 require (
 	github.com/dlclark/regexp2 v1.4.0 // indirect
