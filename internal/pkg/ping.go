@@ -3,11 +3,16 @@ package pkg
 import (
 	"fmt"
 	"github.com/raf924/bot/api/messages"
+	"github.com/raf924/bot/pkg/bot"
 	"github.com/raf924/bot/pkg/bot/command"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"math/rand"
 	"time"
 )
+
+func init() {
+	bot.HandleCommand(&PingCommand{})
+}
 
 type PingCommand struct {
 	pings map[string]time.Time
@@ -16,6 +21,7 @@ type PingCommand struct {
 
 func (p *PingCommand) Init(bot command.Executor) error {
 	p.bot = bot
+	p.pings = map[string]time.Time{}
 	return nil
 }
 
@@ -44,6 +50,7 @@ func (p *PingCommand) Execute(_ *messages.CommandPacket) ([]*messages.BotPacket,
 func (p *PingCommand) OnChat(message *messages.MessagePacket) ([]*messages.BotPacket, error) {
 	if ping, ok := p.pings[message.Message]; ok {
 		elapsed := time.Since(ping)
+		delete(p.pings, message.Message)
 		return []*messages.BotPacket{
 			{
 				Timestamp: timestamppb.Now(),
