@@ -8,5 +8,5 @@ require (
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dop251/goja v0.0.0-20201107160812-7545ac6de48a
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 )
