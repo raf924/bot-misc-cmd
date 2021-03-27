@@ -3,14 +3,9 @@ package pkg
 import (
 	"github.com/dop251/goja"
 	"github.com/raf924/bot/api/messages"
-	"github.com/raf924/bot/pkg/bot"
 	"github.com/raf924/bot/pkg/bot/command"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-func init() {
-	bot.HandleCommand(&MathCommand{})
-}
 
 type MathCommand struct {
 	command.NoOpInterceptor

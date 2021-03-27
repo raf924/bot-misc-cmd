@@ -3,16 +3,11 @@ package pkg
 import (
 	"fmt"
 	"github.com/raf924/bot/api/messages"
-	"github.com/raf924/bot/pkg/bot"
 	"github.com/raf924/bot/pkg/bot/command"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"math/rand"
 	"time"
 )
-
-func init() {
-	bot.HandleCommand(&PingCommand{})
-}
 
 type PingCommand struct {
 	pings map[string]time.Time
@@ -34,6 +29,7 @@ func (p *PingCommand) Aliases() []string {
 }
 
 func (p *PingCommand) Execute(_ *messages.CommandPacket) ([]*messages.BotPacket, error) {
+	rand.Seed(time.Now().UnixNano())
 	id := rand.Int()
 	hexId := fmt.Sprintf("%x", id)
 	p.pings[hexId] = time.Now()

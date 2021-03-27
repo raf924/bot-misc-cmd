@@ -3,15 +3,10 @@ package pkg
 import (
 	"fmt"
 	"github.com/raf924/bot/api/messages"
-	"github.com/raf924/bot/pkg/bot"
 	"github.com/raf924/bot/pkg/bot/command"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"strings"
 )
-
-func init() {
-	bot.HandleCommand(&AfkCommand{})
-}
 
 type AfkCommand struct {
 	afk map[string]string
