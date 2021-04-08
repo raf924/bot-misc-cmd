@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"github.com/raf924/bot/api/messages"
+	messages "github.com/raf924/connector-api/pkg/gen"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"testing"
@@ -51,6 +51,30 @@ func TestMathCommand_Execute(t *testing.T) {
 			name:    "String",
 			args:    args{argString: `"hello"`},
 			want:    "hello",
+			wantErr: false,
+		},
+		{
+			name:    "Unicode",
+			args:    args{argString: `"\x20"`},
+			want:    " ",
+			wantErr: false,
+		},
+		{
+			name:    "Property access",
+			args:    args{argString: `""["length"]`},
+			want:    "0",
+			wantErr: false,
+		},
+		{
+			name:    "This",
+			args:    args{argString: "this"},
+			want:    "Global Object",
+			wantErr: false,
+		},
+		{
+			name:    "Statements",
+			args:    args{argString: "1+3;5+4"},
+			want:    "9",
 			wantErr: false,
 		},
 	}
