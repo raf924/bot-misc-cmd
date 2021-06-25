@@ -5,7 +5,10 @@ import (
 	"github.com/raf924/bot/pkg/bot/command"
 	messages "github.com/raf924/connector-api/pkg/gen"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 )
+
+const TimeoutMessage = "Exceeded computation timeout"
 
 type MathCommand struct {
 	command.NoOpInterceptor
@@ -25,14 +28,26 @@ func (m *MathCommand) Aliases() []string {
 
 func (m *MathCommand) Execute(command *messages.CommandPacket) ([]*messages.BotPacket, error) {
 	r := goja.New()
-	val, err := r.RunString(command.GetArgString())
-	if err != nil {
-		val = r.ToValue(err.Error())
-	}
+	valChan := make(chan string)
+	go func() {
+		val, err := r.RunString(command.GetArgString())
+		if err != nil {
+			val = r.ToValue(err.Error())
+		}
+		valChan <- val.String()
+	}()
+	timer := time.NewTimer(5 * time.Second)
+	go func() {
+		<-timer.C
+		r.Interrupt(nil)
+		valChan <- TimeoutMessage
+	}()
+	val := <-valChan
+	timer.Stop()
 	return []*messages.BotPacket{
 		{
 			Timestamp: timestamppb.Now(),
-			Message:   val.String(),
+			Message:   val,
 			Recipient: command.GetUser(),
 			Private:   command.GetPrivate(),
 		},

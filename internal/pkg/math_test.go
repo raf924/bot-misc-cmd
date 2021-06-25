@@ -77,6 +77,12 @@ func TestMathCommand_Execute(t *testing.T) {
 			want:    "9",
 			wantErr: false,
 		},
+		{
+			name:    "Loop",
+			args:    args{argString: "while(true){}"},
+			want:    TimeoutMessage,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
