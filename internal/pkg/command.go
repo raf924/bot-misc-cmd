@@ -43,6 +43,7 @@ func (c *CmdCommand) Init(bot command.Executor) error {
 	c.commandsLocation = bot.ApiKeys()["commandsLocation"]
 	c.storageMutex = &sync.Mutex{}
 	c.bot = bot
+	c.commands = map[string]customCommand{}
 	c.load()
 	return nil
 }
