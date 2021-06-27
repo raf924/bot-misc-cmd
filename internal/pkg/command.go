@@ -40,6 +40,7 @@ type CmdCommand struct {
 }
 
 func (c *CmdCommand) Init(bot command.Executor) error {
+	log.Println("Init cmd Command")
 	c.commandsLocation = bot.ApiKeys()["commandsLocation"]
 	c.storageMutex = &sync.Mutex{}
 	c.bot = bot
@@ -65,7 +66,7 @@ func runCommand(cmd *customCommand, botCommand *messages.CommandPacket) (string,
 }
 
 func runTextCommand(source string, botCommand *messages.CommandPacket) string {
-	args := botCommand.GetArgs()[1:]
+	args := botCommand.GetArgs()
 	commandContent := strings.ReplaceAll(source, "%sender%", botCommand.GetUser().GetNick())
 	return argRegex.ReplaceAllStringFunc(commandContent, func(s string) string {
 		argIndexStr := argRegex.FindAllStringSubmatch(s, -1)[0][1]
@@ -128,6 +129,7 @@ func (c *CmdCommand) Execute(command *messages.CommandPacket) ([]*messages.BotPa
 }
 
 func (c *CmdCommand) OnChat(message *messages.MessagePacket) ([]*messages.BotPacket, error) {
+	log.Println("OnChat", message.GetMessage())
 	if len(c.bot.Trigger()) == 0 {
 		return nil, nil
 	}
@@ -193,13 +195,13 @@ func (c *CmdCommand) setCommand(cmdName string, cmd customCommand) bool {
 func (c *CmdCommand) load() {
 	file, err := os.Open(c.commandsLocation)
 	if err != nil {
-		log.Println("error opening message file:", err.Error())
+		log.Println("error opening commands file:", err.Error())
 		return
 	}
 	defer file.Close()
 	err = json.NewDecoder(file).Decode(&c.commands)
 	if err != nil {
-		log.Println("error reading message file:", err.Error())
+		log.Println("error reading commands file:", err.Error())
 		return
 	}
 }
