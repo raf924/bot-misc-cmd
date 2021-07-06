@@ -1,18 +1,16 @@
 package pkg
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/raf924/bot/pkg/bot/command"
 	"github.com/raf924/bot/pkg/bot/permissions"
+	"github.com/raf924/bot/pkg/storage"
 	messages "github.com/raf924/connector-api/pkg/gen"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type setter string
@@ -33,16 +31,20 @@ type customCommand struct {
 
 type CmdCommand struct {
 	command.NoOpInterceptor
-	commandsLocation string
-	storageMutex     *sync.Mutex
-	commands         map[string]customCommand
-	bot              command.Executor
+	storage  storage.Storage
+	commands map[string]customCommand
+	bot      command.Executor
 }
 
 func (c *CmdCommand) Init(bot command.Executor) error {
 	log.Println("Init cmd Command")
-	c.commandsLocation = bot.ApiKeys()["commandsLocation"]
-	c.storageMutex = &sync.Mutex{}
+	commandsLocation := bot.ApiKeys()["commandsLocation"]
+	cmdStorage, err := storage.NewFileStorage(commandsLocation)
+	if err != nil {
+		log.Println(err)
+		cmdStorage = storage.NewNoOpStorage()
+	}
+	c.storage = cmdStorage
 	c.bot = bot
 	c.commands = map[string]customCommand{}
 	c.load()
@@ -193,13 +195,7 @@ func (c *CmdCommand) setCommand(cmdName string, cmd customCommand) bool {
 }
 
 func (c *CmdCommand) load() {
-	file, err := os.Open(c.commandsLocation)
-	if err != nil {
-		log.Println("error opening commands file:", err.Error())
-		return
-	}
-	defer file.Close()
-	err = json.NewDecoder(file).Decode(&c.commands)
+	err := c.storage.Load(&c.commands)
 	if err != nil {
 		log.Println("error reading commands file:", err.Error())
 		return
@@ -207,19 +203,5 @@ func (c *CmdCommand) load() {
 }
 
 func (c *CmdCommand) save() {
-	go func() {
-		c.storageMutex.Lock()
-		defer c.storageMutex.Unlock()
-		file, err := os.OpenFile(c.commandsLocation, os.O_CREATE|os.O_WRONLY, os.ModePerm)
-		if err != nil {
-			log.Println("error opening command file:", err.Error())
-			return
-		}
-		defer file.Close()
-		err = json.NewEncoder(file).Encode(c.commands)
-		if err != nil {
-			log.Println("error writing to command file:", err.Error())
-			return
-		}
-	}()
+	c.storage.Save(c.commands)
 }
