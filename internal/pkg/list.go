@@ -2,10 +2,12 @@ package pkg
 
 import (
 	"github.com/raf924/bot/pkg/bot/command"
-	messages "github.com/raf924/connector-api/pkg/gen"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/raf924/bot/pkg/domain"
+	"sort"
 	"strings"
 )
+
+var _ command.Command = (*ListCommand)(nil)
 
 type ListCommand struct {
 	bot command.Executor
@@ -25,17 +27,14 @@ func (l *ListCommand) Aliases() []string {
 	return []string{"l"}
 }
 
-func (l *ListCommand) Execute(command *messages.CommandPacket) ([]*messages.BotPacket, error) {
-	var users []string
-	for _, u := range l.bot.OnlineUsers() {
-		users = append(users, u.Nick)
+func (l *ListCommand) Execute(command *domain.CommandMessage) ([]*domain.ClientMessage, error) {
+	onlineUsers := l.bot.OnlineUsers().All()
+	users := make([]string, 0, len(onlineUsers))
+	sort.Sort(domain.Users(onlineUsers))
+	for _, u := range onlineUsers {
+		users = append(users, u.Nick())
 	}
-	return []*messages.BotPacket{
-		{
-			Timestamp: timestamppb.Now(),
-			Message:   strings.Join(users, ", "),
-			Recipient: command.GetUser(),
-			Private:   command.GetPrivate(),
-		},
+	return []*domain.ClientMessage{
+		domain.NewClientMessage(strings.Join(users, ", "), command.Sender(), command.Private()),
 	}, nil
 }

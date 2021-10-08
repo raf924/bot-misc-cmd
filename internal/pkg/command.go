@@ -4,29 +4,39 @@ import (
 	"fmt"
 	"github.com/raf924/bot/pkg/bot/command"
 	"github.com/raf924/bot/pkg/bot/permissions"
+	"github.com/raf924/bot/pkg/domain"
 	"github.com/raf924/bot/pkg/storage"
-	messages "github.com/raf924/connector-api/pkg/gen"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
+var _ command.Command = (*CmdCommand)(nil)
+
 type setter string
 
 const (
-	setText = "set-txt"
-	setJs   = "set-js"
+	setText setter = "set-txt"
+	setJs   setter = "set-js"
 )
 
 var commandNameRegex = regexp.MustCompile("(?i)([a-zA-Z][a-zA-Z0-9-_]*)")
 var argRegex = regexp.MustCompile("(?i)(%[0-9]+%)")
 
+type Creator struct {
+	Nick string `json:"nick"`
+	Id   string `json:"id"`
+}
+
+func (c *Creator) Is(user *domain.User) bool {
+	return c.Id == "" && user.Nick() == c.Nick || user.Id() == c.Id
+}
+
 type customCommand struct {
-	Setter  setter         `json:"setter"`
-	Creator *messages.User `json:"creator"`
-	Source  string         `json:"source"`
+	Setter  setter   `json:"setter"`
+	Creator *Creator `json:"creator"`
+	Source  string   `json:"source"`
 }
 
 type CmdCommand struct {
@@ -59,7 +69,7 @@ func (c *CmdCommand) Aliases() []string {
 	return nil
 }
 
-func runCommand(cmd *customCommand, botCommand *messages.CommandPacket) (string, error) {
+func runCommand(cmd *customCommand, botCommand *domain.CommandMessage) (string, error) {
 	switch cmd.Setter {
 	case setText:
 		return runTextCommand(cmd.Source, botCommand), nil
@@ -67,9 +77,9 @@ func runCommand(cmd *customCommand, botCommand *messages.CommandPacket) (string,
 	return "", fmt.Errorf("")
 }
 
-func runTextCommand(source string, botCommand *messages.CommandPacket) string {
-	args := botCommand.GetArgs()
-	commandContent := strings.ReplaceAll(source, "%sender%", botCommand.GetUser().GetNick())
+func runTextCommand(source string, botCommand *domain.CommandMessage) string {
+	args := botCommand.Args()
+	commandContent := strings.ReplaceAll(source, "%sender%", botCommand.Sender().Nick())
 	return argRegex.ReplaceAllStringFunc(commandContent, func(s string) string {
 		argIndexStr := argRegex.FindAllStringSubmatch(s, -1)[0][1]
 		argIndex, err := strconv.ParseInt(argIndexStr, 10, 64)
@@ -80,37 +90,35 @@ func runTextCommand(source string, botCommand *messages.CommandPacket) string {
 	})
 }
 
-func (c *CmdCommand) Execute(command *messages.CommandPacket) ([]*messages.BotPacket, error) {
-	set := command.GetArgs()[0]
-	cmdName := command.GetArgs()[1]
+func (c *CmdCommand) Execute(command *domain.CommandMessage) ([]*domain.ClientMessage, error) {
+	set := command.Args()[0]
+	cmdName := command.Args()[1]
 	if !commandNameRegex.MatchString(cmdName) {
 		return nil, fmt.Errorf("command name doesn't match approved pattern")
 	}
 	defer c.save()
 	if set == "unset" {
 		var message string
-		if c.unsetCommand(cmdName, command.GetUser()) {
+		if c.unsetCommand(cmdName, command.Sender()) {
 			message = "unset command %s"
 		} else {
 			message = "couldn't unset command %s"
 		}
-		return []*messages.BotPacket{
-			{
-				Timestamp: timestamppb.Now(),
-				Message:   fmt.Sprintf(message, cmdName),
-				Recipient: command.GetUser(),
-				Private:   command.GetPrivate(),
-			},
+		return []*domain.ClientMessage{
+			domain.NewClientMessage(fmt.Sprintf(message, cmdName), command.Sender(), command.Private()),
 		}, nil
 	}
-	switch set {
+	switch setter(set) {
 	case setText:
 		fallthrough
 	case setJs:
 		couldSet := c.setCommand(cmdName, customCommand{
-			Setter:  setter(set),
-			Creator: command.GetUser(),
-			Source:  strings.Split(command.GetArgString(), fmt.Sprintf("%s %s", set, cmdName))[1],
+			Setter: setter(set),
+			Creator: &Creator{
+				Nick: command.Sender().Nick(),
+				Id:   command.Sender().Id(),
+			},
+			Source: strings.Split(command.ArgString(), fmt.Sprintf("%s %s", set, cmdName))[1],
 		})
 		var message string
 		if couldSet {
@@ -118,27 +126,22 @@ func (c *CmdCommand) Execute(command *messages.CommandPacket) ([]*messages.BotPa
 		} else {
 			message = "could not set command %s"
 		}
-		return []*messages.BotPacket{
-			{
-				Timestamp: timestamppb.Now(),
-				Message:   fmt.Sprintf(message, cmdName),
-				Recipient: command.GetUser(),
-				Private:   command.GetPrivate(),
-			},
+		return []*domain.ClientMessage{
+			domain.NewClientMessage(fmt.Sprintf(message, cmdName), command.Sender(), command.Private()),
 		}, nil
 	}
 	return nil, nil
 }
 
-func (c *CmdCommand) OnChat(message *messages.MessagePacket) ([]*messages.BotPacket, error) {
-	log.Println("OnChat", message.GetMessage())
+func (c *CmdCommand) OnChat(message *domain.ChatMessage) ([]*domain.ClientMessage, error) {
+	log.Println("OnChat", message.Message())
 	if len(c.bot.Trigger()) == 0 {
 		return nil, nil
 	}
-	if !strings.HasPrefix(message.GetMessage(), c.bot.Trigger()) {
+	if !strings.HasPrefix(message.Message(), c.bot.Trigger()) {
 		return nil, nil
 	}
-	argString := strings.TrimPrefix(message.GetMessage(), c.bot.Trigger())
+	argString := strings.TrimPrefix(message.Message(), c.bot.Trigger())
 	args := strings.Split(argString, " ")
 	if len(args) == 0 || len(args[0]) == 0 {
 		return nil, nil
@@ -149,36 +152,24 @@ func (c *CmdCommand) OnChat(message *messages.MessagePacket) ([]*messages.BotPac
 		return nil, nil
 	}
 	argString = strings.TrimSpace(strings.TrimPrefix(argString, possibleCommand))
-	commandPacket := &messages.CommandPacket{
-		Timestamp: message.GetTimestamp(),
-		Command:   possibleCommand,
-		Args:      args[1:],
-		ArgString: argString,
-		User:      message.GetUser(),
-		Private:   message.GetPrivate(),
-	}
+	commandPacket := domain.NewCommandMessage(possibleCommand, args[1:], argString, message.Sender(), message.Private(), message.Timestamp())
 	text, err := runCommand(&cmd, commandPacket)
 	if err != nil {
 		return nil, err
 	}
-	return []*messages.BotPacket{
-		{
-			Timestamp: timestamppb.Now(),
-			Message:   text,
-			Recipient: message.GetUser(),
-			Private:   message.GetPrivate(),
-		},
+	return []*domain.ClientMessage{
+		domain.NewClientMessage(text, message.Sender(), message.Private()),
 	}, nil
 }
 
-func (c *CmdCommand) unsetCommand(cmdName string, unsetter *messages.User) bool {
+func (c *CmdCommand) unsetCommand(cmdName string, unsetter *domain.User) bool {
 	var cmd customCommand
 	var ok bool
 	if cmd, ok = c.commands[cmdName]; !ok {
 		return false
 	}
 	if !c.bot.UserHasPermission(unsetter, permissions.MOD) {
-		if cmd.Creator == nil || unsetter.String() != cmd.Creator.String() {
+		if cmd.Creator == nil || cmd.Creator.Is(unsetter) {
 			return false
 		}
 	}

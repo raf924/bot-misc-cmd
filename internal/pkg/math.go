@@ -3,10 +3,11 @@ package pkg
 import (
 	"github.com/dop251/goja"
 	"github.com/raf924/bot/pkg/bot/command"
-	messages "github.com/raf924/connector-api/pkg/gen"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/raf924/bot/pkg/domain"
 	"time"
 )
+
+var _ command.Command = (*MathCommand)(nil)
 
 const TimeoutMessage = "Exceeded computation timeout"
 
@@ -14,7 +15,7 @@ type MathCommand struct {
 	command.NoOpInterceptor
 }
 
-func (m *MathCommand) Init(bot command.Executor) error {
+func (m *MathCommand) Init(_ command.Executor) error {
 	return nil
 }
 
@@ -26,11 +27,11 @@ func (m *MathCommand) Aliases() []string {
 	return nil
 }
 
-func (m *MathCommand) Execute(command *messages.CommandPacket) ([]*messages.BotPacket, error) {
+func (m *MathCommand) Execute(command *domain.CommandMessage) ([]*domain.ClientMessage, error) {
 	r := goja.New()
 	valChan := make(chan string)
 	go func() {
-		val, err := r.RunString(command.GetArgString())
+		val, err := r.RunString(command.ArgString())
 		if err != nil {
 			val = r.ToValue(err.Error())
 		}
@@ -44,12 +45,7 @@ func (m *MathCommand) Execute(command *messages.CommandPacket) ([]*messages.BotP
 	}()
 	val := <-valChan
 	timer.Stop()
-	return []*messages.BotPacket{
-		{
-			Timestamp: timestamppb.Now(),
-			Message:   val,
-			Recipient: command.GetUser(),
-			Private:   command.GetPrivate(),
-		},
+	return []*domain.ClientMessage{
+		domain.NewClientMessage(val, command.Sender(), command.Private()),
 	}, nil
 }

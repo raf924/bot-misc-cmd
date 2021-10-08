@@ -1,10 +1,10 @@
 package pkg
 
 import (
-	messages "github.com/raf924/connector-api/pkg/gen"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/raf924/bot/pkg/domain"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestMathCommand_Execute(t *testing.T) {
@@ -87,19 +87,14 @@ func TestMathCommand_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MathCommand{}
-			got, err := m.Execute(&messages.CommandPacket{
-				Timestamp: timestamppb.Now(),
-				Command:   "math",
-				Args:      nil,
-				User: &messages.User{
-					Nick:  "test",
-					Id:    "test",
-					Mod:   false,
-					Admin: false,
-				},
-				Private:   false,
-				ArgString: tt.args.argString,
-			})
+			got, err := m.Execute(domain.NewCommandMessage(
+				"math",
+				nil,
+				tt.args.argString,
+				domain.NewUser("test", "test", domain.RegularUser),
+				false,
+				time.Now(),
+			))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
