@@ -91,6 +91,9 @@ func runTextCommand(source string, botCommand *domain.CommandMessage) string {
 }
 
 func (c *CmdCommand) Execute(command *domain.CommandMessage) ([]*domain.ClientMessage, error) {
+	if len(command.Args()) < 2 {
+		return nil, nil
+	}
 	set := command.Args()[0]
 	cmdName := command.Args()[1]
 	if !commandNameRegex.MatchString(cmdName) {
