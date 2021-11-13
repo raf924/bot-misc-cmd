@@ -68,7 +68,7 @@ func TestMathCommand_Execute(t *testing.T) {
 		{
 			name:    "This",
 			args:    args{argString: "this"},
-			want:    "Global Object",
+			want:    "[object global]",
 			wantErr: false,
 		},
 		{
@@ -99,8 +99,8 @@ func TestMathCommand_Execute(t *testing.T) {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got[0].Message, tt.want) {
-				t.Errorf("Execute() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got[0].Message(), tt.want) {
+				t.Errorf("Execute() got = %v, want %v", got[0].Message(), tt.want)
 			}
 		})
 	}
