@@ -2,10 +2,9 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/raf924/bot/pkg/bot/command"
-	"github.com/raf924/bot/pkg/bot/permissions"
-	"github.com/raf924/bot/pkg/domain"
-	"github.com/raf924/bot/pkg/storage"
+	"github.com/raf924/connector-sdk/command"
+	"github.com/raf924/connector-sdk/domain"
+	"github.com/raf924/connector-sdk/storage"
 	"log"
 	"regexp"
 	"strconv"
@@ -171,7 +170,7 @@ func (c *CmdCommand) unsetCommand(cmdName string, unsetter *domain.User) bool {
 	if cmd, ok = c.commands[cmdName]; !ok {
 		return false
 	}
-	if !c.bot.UserHasPermission(unsetter, permissions.MOD) {
+	if !c.bot.UserHasPermission(unsetter, domain.IsModerator) {
 		if cmd.Creator == nil || cmd.Creator.Is(unsetter) {
 			return false
 		}

@@ -2,8 +2,8 @@ package pkg
 
 import (
 	"github.com/dop251/goja"
-	"github.com/raf924/bot/pkg/bot/command"
-	"github.com/raf924/bot/pkg/domain"
+	"github.com/raf924/connector-sdk/command"
+	"github.com/raf924/connector-sdk/domain"
 	"time"
 )
 
