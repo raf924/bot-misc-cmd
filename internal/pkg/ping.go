@@ -10,15 +10,20 @@ import (
 
 var _ command.Command = (*PingCommand)(nil)
 
+type Ping struct {
+	command *domain.CommandMessage
+	start   time.Time
+}
+
 type PingCommand struct {
 	command.NoOpInterceptor
-	pings map[string]time.Time
+	pings map[string]Ping
 	bot   command.Executor
 }
 
 func (p *PingCommand) Init(bot command.Executor) error {
 	p.bot = bot
-	p.pings = map[string]time.Time{}
+	p.pings = map[string]Ping{}
 	return nil
 }
 
@@ -30,11 +35,14 @@ func (p *PingCommand) Aliases() []string {
 	return nil
 }
 
-func (p *PingCommand) Execute(_ *domain.CommandMessage) ([]*domain.ClientMessage, error) {
+func (p *PingCommand) Execute(cmd *domain.CommandMessage) ([]*domain.ClientMessage, error) {
 	rand.Seed(time.Now().UnixNano())
 	id := rand.Int()
 	hexId := fmt.Sprintf("%x", id)
-	p.pings[hexId] = time.Now()
+	p.pings[hexId] = Ping{
+		command: cmd,
+		start:   time.Now(),
+	}
 	return []*domain.ClientMessage{
 		domain.NewClientMessage(hexId, p.bot.BotUser(), true),
 	}, nil
@@ -42,10 +50,10 @@ func (p *PingCommand) Execute(_ *domain.CommandMessage) ([]*domain.ClientMessage
 
 func (p *PingCommand) OnChat(message *domain.ChatMessage) ([]*domain.ClientMessage, error) {
 	if ping, ok := p.pings[message.Message()]; ok {
-		elapsed := time.Since(ping)
+		elapsed := time.Since(ping.start)
 		delete(p.pings, message.Message())
 		return []*domain.ClientMessage{
-			domain.NewClientMessage(fmt.Sprintf("Current ping is %s", elapsed.String()), nil, false),
+			domain.NewClientMessage(fmt.Sprintf("Current ping is %s", elapsed.String()), ping.command.Sender(), ping.command.Private()),
 		}, nil
 	}
 	return nil, nil
