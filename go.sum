@@ -10,8 +10,8 @@ github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfn
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
-github.com/raf924/connector-sdk v1.0.1 h1:s6FY6Pf0BnMRkOXeGgW3ppXoLoK8jG/Mhn64lcGZSA4=
-github.com/raf924/connector-sdk v1.0.1/go.mod h1:Nfo+rxQfUxMk890n2yWZTRrNP4jdq1hBTkq0Vqsr+x8=
+github.com/raf924/connector-sdk v1.1.1 h1:kvDJnKQyahdvKv80Jzm+HBXiGRFnrYG6UATbkm6/IvQ=
+github.com/raf924/connector-sdk v1.1.1/go.mod h1:Nfo+rxQfUxMk890n2yWZTRrNP4jdq1hBTkq0Vqsr+x8=
 github.com/segmentio/ksuid v1.0.4/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
 golang.org/x/text v0.3.6/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/text v0.3.7 h1:olpwvP2KacW1ZWvsR7uQhoyTYvKAupfQrRGBFM352Gk=
